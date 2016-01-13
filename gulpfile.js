@@ -5,10 +5,11 @@
 var gulp = require('gulp'),
 	uglify = require('gulp-uglify'),
 	compass = require('gulp-compass'),
-	browserSync = require('browserSync'),
+	browserSync = require('browser-sync'),
 	reload = browserSync.reload,
 	plumber = require('gulp-plumber'),
 	autoprefixer = require('gulp-autoprefixer'),
+	del = require('del'),   //plugin used to delete files/folders
 	rename = require('gulp-rename');
 
 // 
@@ -56,9 +57,46 @@ gulp.task('html', function() {
 	.pipe(reload({stream: true}));
 });
 
+
+// 
+//  Build Task
+//  
+//  
+
+// clear out all files and folders from build folder
+gulp.task('build:cleanfolder', function(cb) {
+	return del([
+		'build/**'
+	], cb);
+});
+
+
+//Task to cereate build directory for all files
+gulp.task('build:copy', ['build:cleanfolder'], function(cb) {
+	return gulp.src('app/**/*')
+		.pipe(gulp.dest('build/'), cb);
+
+});
+
+//task to remove unwanted build files
+//list all files and directories here that you don't want to include
+gulp.task('build:remove', ['build:copy'], function(){
+	del([
+		'build/scss',
+		'build/js/!(*.min.js)'
+	]);
+});
+
+//Parent build task like default task to kick off build:remove (which in return will want to run build:copy first
+//that will want to run build:cleanfolder first)
+gulp.task('build', ['build:remove']);
+
+
+
 // 
 //  Browser Sync Task
 //  This is like live reload, you make the change in the file and it is reflected in all your browsers.
+//  It looks for syncing things in ./app/ folder
 // 
 gulp.task('browser-sync', function(){
 	browserSync({
@@ -67,6 +105,18 @@ gulp.task('browser-sync', function(){
 		}
 	});
 });
+
+
+// Task to run build server for testing final app
+//  It looks for syncing things in ./build/ folder
+gulp.task('build:serve', function(){
+	browserSync({
+		server: {
+			baseDir: "./build/"
+		}
+	});
+});
+
 
 // 
 //  Watch Task
